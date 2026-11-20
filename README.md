@@ -10,8 +10,8 @@ Ayuda a Pablo a aprobar su examen de conducir sin chocar ningún carro.
 
 | Nombre | Usuario GitHub | Aportes principales |
 |---|---|---|
-| Laura Santamaria Espinosa | *(completar)* | *(completar)* |
-| Pablo Alvarez Restrepo | *(completar)* | *(completar)* |
+| Laura Santamaria Espinosa |  Santtie  |   El juego   |
+| Pablo Alvarez Restrepo | pavvl0o | Personaje principal |
 
 # Compilación y ejecución
 
@@ -66,4 +66,4 @@ En cada paso, `Vista.borrar` borra las celdas que los obstáculos van a dejar li
 
 # Uso de IA
 
-Se usó Claude (Anthropic) para generar el código Jack y VM, los sprites y el borrador de este README, a partir del enunciado y de nuestras indicaciones. *(Completar: qué revisaron, probaron o cambiaron ustedes.)*
+Se usó Claude (Anthropic) para generar correcciones y ajustes para el código Jack y VM, los sprites y el borrador de este README, se usó tambien Claude y Gemini para el diseño de los dibujos usados en el juego a partir del enunciado y de nuestras indicaciones.
