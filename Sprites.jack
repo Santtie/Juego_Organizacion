@@ -1,0 +1,82 @@
+/*********
+* Sprites.jack - Dibujos de 16x16 pixeles del juego. Cada dibujo es un Array
+* de 16 palabras (una por linea); el bit 0 es el pixel de la izquierda.
+* Autor 1: Laura Santamaria Espinosa
+* Autor 2: Pablo Alvarez Restrepo
+*********/
+class Sprites {
+    field Array carro, cono, moto, moneda, cabina, carga, cola, trazo;
+
+    // Crea todos los dibujos (el camion usa tres: cabina, carga y cola)
+    constructor Sprites new() {
+        let carro = Sprites.crear(0, 0, 0, 2032, 2200, 4236, 32766, -1,
+                                -24579, -1, -32383, 13364, 11308, 6168, 0, 0);
+        let cono = Sprites.crear(0, 0, 384, 384, 960, 576, 2016, 2016,
+                                2064, 4080, 8184, 8184, 32766, 32766, 0, 0);
+        let moto = Sprites.crear(0, 896, 1984, 1856, 896, 2016, 3964, 8132,
+                                32736, 8184, 31710, -12877, -13261, 30750, 0, 0);
+        let moneda = Sprites.crear(0, 0, 2016, 8184, 15420, 15324, 30318, 30318,
+                                30318, 30318, 15324, 15420, 8184, 2016, 0, 0);
+        let cabina = Sprites.crear(0, 0, 0, 0, 16352, 14384, 14360, 14348,
+                                16382, -1, -7, -1, -253, 120, 120, 48);
+        let carga = Sprites.crear(0, -1, -1, 30583, 30583, 30583, 30583, 30583,
+                                30583, 30583, -1, -1, -1, 0, 0, 0);
+        let cola = Sprites.crear(0, 16383, 16383, 14199, 14199, 14199, 14199, 14199,
+                                14199, 14199, 16383, 16383, 16643, 7740, 7740, 3096);
+        let trazo = Sprites.crear(0, 0, 0, 0, 0, 0, 0, -1,
+                                -1, 0, 0, 0, 0, 0, 0, 0);
+        return this;
+    }
+
+    // Libera todos los dibujos
+    method void dispose() {
+        do carro.dispose();
+        do cono.dispose();
+        do moto.dispose();
+        do moneda.dispose();
+        do cabina.dispose();
+        do carga.dispose();
+        do cola.dispose();
+        do trazo.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    // Arma un dibujo con sus 16 lineas, de arriba hacia abajo
+    function Array crear(int a, int b, int c, int d, int e, int f, int g, int h,
+                         int i, int j, int k, int l, int m, int n, int o, int p) {
+        var Array s;
+        let s = Array.new(16);
+        let s[0] = a;
+        let s[1] = b;
+        let s[2] = c;
+        let s[3] = d;
+        let s[4] = e;
+        let s[5] = f;
+        let s[6] = g;
+        let s[7] = h;
+        let s[8] = i;
+        let s[9] = j;
+        let s[10] = k;
+        let s[11] = l;
+        let s[12] = m;
+        let s[13] = n;
+        let s[14] = o;
+        let s[15] = p;
+        return s;
+    }
+
+    // Dibujo de la celda numero parte (0, 1 o 2) de un obstaculo
+    method Array obstaculo(int tipo, int parte) {
+        if (tipo = 0) { return cono; }
+        if (tipo = 2) { return moto; }
+        if (tipo = 3) { return moneda; }
+        if (parte = 0) { return cabina; }
+        if (parte = 1) { return carga; }
+        return cola;
+    }
+
+    method Array carro() { return carro; }
+
+    method Array trazo() { return trazo; }
+}

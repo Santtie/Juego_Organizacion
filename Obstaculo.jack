@@ -1,0 +1,59 @@
+/*********
+* Obstaculo.jack - Un obstaculo de la via. El tipo define como es:
+* 0 cono, 1 camion (ocupa 3 celdas), 2 moto (avanza 2 celdas), 3 moneda.
+* Autor 1: Laura Santamaria Espinosa
+* Autor 2: Pablo Alvarez Restrepo
+*********/
+class Obstaculo {
+    field int tipo, carril, col, colAntes;
+
+    // Obstaculo de tipo t en el carril c, con su celda izquierda en x
+    constructor Obstaculo new(int t, int c, int x) {
+        let tipo = t;
+        let carril = c;
+        let col = x;
+        let colAntes = x;
+        return this;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method int largo() {
+        if (tipo = 1) { return 3; }
+        return 1;
+    }
+
+    method int velocidad() {
+        if (tipo = 2) { return 2; }
+        return 1;
+    }
+
+    method boolean esLetal() { return tipo < 3; }
+
+    method void mover() {
+        let colAntes = col;
+        let col = col - velocidad();
+        return;
+    }
+
+    // true si en el ultimo movimiento paso por la celda (c, x)
+    method boolean pasoPor(int c, int x) {
+        return (carril = c) & ~(col > x) & ~(x > (colAntes + largo() - 1));
+    }
+
+    // true si ocupa alguna celda del carril c entre las columnas desde y hasta
+    method boolean ocupa(int c, int desde, int hasta) {
+        return (carril = c) & ~(col > hasta) & ~((col + largo() - 1) < desde);
+    }
+
+    method boolean salio() { return (col + largo()) < 1; }
+
+    method int tipo() { return tipo; }
+
+    method int carril() { return carril; }
+
+    method int col() { return col; }
+}

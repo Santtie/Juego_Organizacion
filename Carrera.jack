@@ -1,0 +1,200 @@
+/*********
+* Carrera.jack - Reglas del juego: carro, vidas, puntaje, progreso y
+* obstaculos. No dibuja ni lee el teclado.
+* Autor 1: Laura Santamaria Espinosa
+* Autor 2: Pablo Alvarez Restrepo
+*********/
+class Carrera {
+    field Array obs;
+    field int n, carril, pedido, vidas, puntaje, progreso, estado, meta;
+
+    // Carro en el carril 1, 3 vidas y sin obstaculos
+    constructor Carrera new(int pasosMeta, int semilla) {
+        let obs = Array.new(20);
+        let n = 0;
+        let carril = 1;
+        let pedido = 0;
+        let vidas = 3;
+        let puntaje = 0;
+        let progreso = 0;
+        let estado = 0;
+        let meta = pasosMeta;
+        do aleatorio.semilla(semilla);
+        return this;
+    }
+
+    method void dispose() {
+        while (n > 0) { do quitar(n - 1); }
+        do obs.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method void moverCarro(int dir) {
+        if ((dir = -1) | (dir = 1)) { let pedido = dir; }
+        return;
+    }
+
+    method void agregarObstaculo(int tipo, int c, int col) {
+        if (n < 20) {
+            let obs[n] = Obstaculo.new(tipo, c, col);
+            let n = n + 1;
+        }
+        return;
+    }
+
+    // Un paso: cambio de carril, movimiento, choques, salidas y progreso
+    method void avanzar() {
+        var int c;
+        if (~(estado = 0)) { return; }
+        let c = carril + pedido;
+        if ((c > -1) & (c < 3)) { let carril = c; }
+        let pedido = 0;
+        do moverTodos();
+        do choques();
+        if (vidas = 0) {
+            let estado = 1;
+            return;
+        }
+        do quitarSalidos();
+        let progreso = progreso + 1;
+        let puntaje = puntaje + 1;
+        if (progreso = meta) { let estado = 2; }
+        return;
+    }
+
+    // Mueve todos los obstaculos a la izquierda
+    method void moverTodos() {
+        var int i;
+        var Obstaculo o;
+        let i = 0;
+        while (i < n) {
+            let o = obs[i];
+            do o.mover();
+            let i = i + 1;
+        }
+        return;
+    }
+
+    // Los obstaculos que pasaron por el carro (columna 2) quitan una vida
+    // o suman 10 puntos, y desaparecen
+    method void choques() {
+        var int i;
+        var Obstaculo o;
+        let i = n - 1;
+        while (i > -1) {
+            let o = obs[i];
+            if (o.pasoPor(carril, 2)) {
+                if (o.esLetal()) {
+                    if (vidas > 0) { let vidas = vidas - 1; }
+                } else {
+                    let puntaje = puntaje + 10;
+                }
+                do quitar(i);
+            }
+            let i = i - 1;
+        }
+        return;
+    }
+
+    // Elimina los obstaculos que salieron por la izquierda
+    method void quitarSalidos() {
+        var int i;
+        var Obstaculo o;
+        let i = n - 1;
+        while (i > -1) {
+            let o = obs[i];
+            if (o.salio()) { do quitar(i); }
+            let i = i - 1;
+        }
+        return;
+    }
+
+    // Libera el obstaculo i y pone el ultimo en su lugar
+    method void quitar(int i) {
+        var Obstaculo o;
+        let o = obs[i];
+        do o.dispose();
+        let n = n - 1;
+        let obs[i] = obs[n];
+        return;
+    }
+
+    // Agrega a lo sumo un obstaculo en la columna 31. Salen mas
+    // obstaculos a medida que sube el nivel
+    method void generar() {
+        var int tipo, c;
+        if (~(estado = 0)) { return; }
+        if (~(azar() < (32 + (nivel() * 8)))) { return; }
+        let tipo = azar() & 3;
+        let c = azar() / 43;
+        if ((ocupada(c, 31) = -1) & pasoLibre(c, tipo)) {
+            do agregarObstaculo(tipo, c, 31);
+        }
+        return;
+    }
+
+    // Numero entre 0 y 127 (se usan los bits altos del generador)
+    method int azar() {
+        return (Aleatorio.siguiente() & 32767) / 256;
+    }
+
+    // Paso libre: un obstaculo letal no entra al carril c si los otros dos
+    // carriles ya tienen uno cerca (las motos son rapidas y miran mas lejos)
+    method boolean pasoLibre(int c, int tipo) {
+        var int desde, a, b;
+        if (tipo = 3) { return true; }
+        let desde = 22;
+        if (tipo = 2) { let desde = 9; }
+        let a = c + 1;
+        if (a = 3) { let a = 0; }
+        let b = 3 - c - a;
+        return ~(hayLetal(a, desde) & hayLetal(b, desde));
+    }
+
+    // true si el carril c tiene un obstaculo letal entre desde y la columna 31
+    method boolean hayLetal(int c, int desde) {
+        var int i;
+        var Obstaculo o;
+        let i = 0;
+        while (i < n) {
+            let o = obs[i];
+            if (o.esLetal() & o.ocupa(c, desde, 31)) { return true; }
+            let i = i + 1;
+        }
+        return false;
+    }
+
+    // Tipo del obstaculo en (c, col), o -1 si la celda esta libre
+    method int ocupada(int c, int col) {
+        var int i;
+        var Obstaculo o;
+        if ((col < 0) | (col > 31)) { return -1; }
+        let i = 0;
+        while (i < n) {
+            let o = obs[i];
+            if (o.ocupa(c, col, col)) { return o.tipo(); }
+            let i = i + 1;
+        }
+        return -1;
+    }
+
+    // Nivel de dificultad de 0 a 4 segun lo recorrido
+    method int nivel() { return (progreso * 5) / meta; }
+
+    method int carrilCarro() { return carril; }
+
+    method int vidas() { return vidas; }
+
+    method int puntaje() { return puntaje; }
+
+    method int progreso() { return progreso; }
+
+    method int estado() { return estado; }
+
+    method int cantidad() { return n; }
+
+    method int meta() { return meta; }
+
+    method Obstaculo obstaculo(int i) { return obs[i]; }
+}

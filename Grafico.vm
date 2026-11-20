@@ -1,0 +1,138 @@
+// Grafico.vm - Rutinas para dibujar celdas de 16x16 en la pantalla.
+// Autor 1: Laura Santamaria Espinosa
+// Autor 2: Pablo Alvarez Restrepo
+// Se escribe la pantalla con pointer/that, sin Memory.poke ni Math.multiply.
+
+// direccion(fila, col) = 16384 + fila*512 + col
+// fila*512 se calcula duplicando fila 9 veces
+function Grafico.direccion 2
+push argument 0
+pop local 0
+push constant 9
+pop local 1
+label DOBLAR
+push local 0
+push local 0
+add
+pop local 0
+push local 1
+push constant 1
+sub
+pop local 1
+push local 1
+push constant 0
+gt
+if-goto DOBLAR
+push local 0
+push constant 16384
+add
+push argument 1
+add
+return
+
+// dibujarCelda(fila, col, sprite): copia las 16 lineas del sprite.
+// this recorre el sprite y that recorre la pantalla (saltos de 32 palabras)
+function Grafico.dibujarCelda 1
+push argument 0
+push argument 1
+call Grafico.direccion 2
+pop pointer 1
+push argument 2
+pop pointer 0
+push constant 16
+pop local 0
+label LINEA_DIBUJAR
+push this 0
+pop that 0
+push pointer 0
+push constant 1
+add
+pop pointer 0
+push pointer 1
+push constant 32
+add
+pop pointer 1
+push local 0
+push constant 1
+sub
+pop local 0
+push local 0
+push constant 0
+gt
+if-goto LINEA_DIBUJAR
+push constant 0
+return
+
+// borrarCelda(fila, col): pone en 0 las 16 lineas de la celda
+function Grafico.borrarCelda 1
+push argument 0
+push argument 1
+call Grafico.direccion 2
+pop pointer 1
+push constant 16
+pop local 0
+label LINEA_BORRAR
+push constant 0
+pop that 0
+push pointer 1
+push constant 32
+add
+pop pointer 1
+push local 0
+push constant 1
+sub
+pop local 0
+push local 0
+push constant 0
+gt
+if-goto LINEA_BORRAR
+push constant 0
+return
+
+// desplazarFila(fila): mueve toda la fila de celdas una celda a la
+// izquierda; la celda de la columna 0 pasa a la columna 31.
+// local 0 = lineas que faltan, local 1 = primera palabra de la linea,
+// local 2 = palabras que faltan por mover en la linea
+function Grafico.desplazarFila 3
+push argument 0
+push constant 0
+call Grafico.direccion 2
+pop pointer 1
+push constant 16
+pop local 0
+label LINEA_FILA
+push that 0
+pop local 1
+push constant 31
+pop local 2
+label PALABRA_FILA
+push that 1
+pop that 0
+push pointer 1
+push constant 1
+add
+pop pointer 1
+push local 2
+push constant 1
+sub
+pop local 2
+push local 2
+push constant 0
+gt
+if-goto PALABRA_FILA
+push local 1
+pop that 0
+push pointer 1
+push constant 1
+add
+pop pointer 1
+push local 0
+push constant 1
+sub
+pop local 0
+push local 0
+push constant 0
+gt
+if-goto LINEA_FILA
+push constant 0
+return

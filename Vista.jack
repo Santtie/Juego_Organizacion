@@ -1,0 +1,202 @@
+/*********
+* Vista.jack - Dibuja las pantallas, la via, el carro, los obstaculos y el
+* marcador. Solo lee la carrera, no la cambia.
+* Filas de celdas: 0-1 marcador, 2 barra de progreso, 4 y 10 bordes,
+* 5, 7 y 9 carriles, 6 y 8 lineas divisorias, 11-15 mensajes.
+* Autor 1: Laura Santamaria Espinosa
+* Autor 2: Pablo Alvarez Restrepo
+*********/
+class Vista {
+    field Sprites spr;
+    field int carrilVisto, barra;
+
+    constructor Vista new() {
+        let spr = Sprites.new();
+        return this;
+    }
+
+    method void dispose() {
+        do spr.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    // Escribe un texto y libera el String para no llenar la memoria
+    method void texto(int fila, int col, String s) {
+        do Output.moveCursor(fila, col);
+        do Output.printString(s);
+        do s.dispose();
+        return;
+    }
+
+    method void centrado(int fila, String s) {
+        do texto(fila, (64 - s.length()) / 2, s);
+        return;
+    }
+
+    // Escribe un numero y borra lo que quede a su derecha
+    method void numero(int fila, int col, int valor) {
+        do Output.moveCursor(fila, col);
+        do Output.printInt(valor);
+        do Output.printChar(32);
+        do Output.printChar(32);
+        return;
+    }
+
+    // Pinta de blanco las lineas de pixeles entre y1 y y2
+    method void limpiar(int y1, int y2) {
+        do Screen.setColor(false);
+        do Screen.drawRectangle(0, y1, 511, y2);
+        do Screen.setColor(true);
+        return;
+    }
+
+    // Pantalla inicial
+    method void inicio() {
+        do Screen.clearScreen();
+        do centrado(4, "YA DENLE LA LICENCIA A PABLO");
+        do centrado(6, "Ayuda a Pablo a aprobar su examen de conducir");
+        do centrado(7, "sin chocar ningun carro");
+        do Grafico.dibujarCelda(7, 15, spr.carro());
+        do Screen.drawLine(128, 128, 383, 128);
+        do centrado(13, "Elige la distancia:  1) 150   2) 300   3) 600");
+        do texto(15, 21, "Distancia:");
+        do texto(15, 37, "pasos");
+        do centrado(18, "Presiona ENTER para empezar");
+        do centrado(21, "Flechas: carril   P: pausa   R: reiniciar   ESC: salir");
+        return;
+    }
+
+    method void distancia(int pasos) {
+        do numero(15, 32, pasos);
+        return;
+    }
+
+    // Dibuja el marcador y la via vacia al empezar una partida
+    method void escenario(Carrera c) {
+        var int col;
+        do Screen.clearScreen();
+        do texto(0, 2, "VIDAS");
+        do texto(0, 24, "PUNTOS");
+        do texto(0, 48, "FALTAN");
+        do Screen.drawLine(0, 40, 511, 40);
+        do Screen.drawRectangle(0, 76, 511, 77);
+        do Screen.drawRectangle(0, 162, 511, 163);
+        let col = 0;
+        while (col < 32) {
+            do Grafico.dibujarCelda(6, col, spr.trazo());
+            do Grafico.dibujarCelda(6, col + 1, spr.trazo());
+            do Grafico.dibujarCelda(8, col, spr.trazo());
+            do Grafico.dibujarCelda(8, col + 1, spr.trazo());
+            let col = col + 4;
+        }
+        let barra = 0;
+        let carrilVisto = c.carrilCarro();
+        do Grafico.dibujarCelda(7, 2, spr.carro());
+        do marcador(c);
+        do centrado(18, "Flechas: carril   P: pausa   R: reiniciar   ESC: salir");
+        return;
+    }
+
+    // Actualiza vidas, puntos, pasos que faltan y la barra de progreso
+    method void marcador(Carrera c) {
+        var int tramos;
+        do numero(0, 8, c.vidas());
+        do numero(0, 31, c.puntaje());
+        do numero(0, 55, c.meta() - c.progreso());
+        let tramos = (c.progreso() * 31) / c.meta();
+        if (tramos > barra) {
+            do Screen.drawRectangle(barra * 16, 37, (tramos * 16) + 15, 43);
+            let barra = tramos;
+        }
+        return;
+    }
+
+    method int fila(int carril) {
+        return 5 + carril + carril;
+    }
+
+    // Antes de avanzar: borra lo que los obstaculos van a dejar libre
+    method void borrar(Carrera c) {
+        var int i;
+        let i = 0;
+        while (i < c.cantidad()) {
+            do borrarObstaculo(c.obstaculo(i));
+            let i = i + 1;
+        }
+        return;
+    }
+
+    // Borra la cola del obstaculo (las celdas que deja al avanzar). Cerca del
+    // carro se borra entero porque puede desaparecer por un choque
+    method void borrarObstaculo(Obstaculo o) {
+        var int x, fin;
+        let fin = o.col() + o.largo() - 1;
+        let x = fin - o.velocidad() + 1;
+        if ((x < o.col()) | (o.col() < 5)) { let x = o.col(); }
+        while (~(x > fin)) {
+            if ((x > -1) & (x < 32)) { do Grafico.borrarCelda(fila(o.carril()), x); }
+            let x = x + 1;
+        }
+        return;
+    }
+
+    // Despues de avanzar: mueve las lineas y dibuja obstaculos, carro y marcador
+    method void dibujar(Carrera c) {
+        var int i;
+        do Grafico.desplazarFila(6);
+        do Grafico.desplazarFila(8);
+        if (~(c.carrilCarro() = carrilVisto)) {
+            do Grafico.borrarCelda(fila(carrilVisto), 2);
+            let carrilVisto = c.carrilCarro();
+        }
+        let i = 0;
+        while (i < c.cantidad()) {
+            do dibujarObstaculo(c.obstaculo(i));
+            let i = i + 1;
+        }
+        do Grafico.dibujarCelda(fila(carrilVisto), 2, spr.carro());
+        do marcador(c);
+        return;
+    }
+
+    // Dibuja las celdas visibles del obstaculo
+    method void dibujarObstaculo(Obstaculo o) {
+        var int k, x;
+        let k = 0;
+        while (k < o.largo()) {
+            let x = o.col() + k;
+            if ((x > -1) & (x < 32)) {
+                do Grafico.dibujarCelda(fila(o.carril()), x, spr.obstaculo(o.tipo(), k));
+            }
+            let k = k + 1;
+        }
+        return;
+    }
+
+    method void pausa(boolean activa) {
+        if (activa) { do centrado(20, "PAUSA"); }
+        else { do limpiar(220, 230); }
+        return;
+    }
+
+    // Resultado de la partida debajo de la via
+    method void fin(Carrera c) {
+        do limpiar(176, 255);
+        if (c.estado() = 2) {
+            do centrado(17, "LICENCIA APROBADA! Pablo ya puede manejar");
+        } else {
+            do centrado(17, "GAME OVER - Pablo choco y reprobo el examen");
+        }
+        do texto(19, 24, "Puntaje final:");
+        do numero(19, 39, c.puntaje());
+        do centrado(21, "R: volver al inicio     ESC: salir");
+        return;
+    }
+
+    method void adios() {
+        do Screen.clearScreen();
+        do centrado(11, "Juego terminado");
+        return;
+    }
+}

@@ -1,0 +1,27 @@
+// Aleatorio.vm - Generador de numeros pseudoaleatorios: x = 5x + 3.
+// Autor 1: Laura Santamaria Espinosa
+// Autor 2: Pablo Alvarez Restrepo
+
+// semilla(s): guarda s como valor inicial
+function Aleatorio.semilla 0
+push argument 0
+pop static 0
+push constant 0
+return
+
+// siguiente(): calcula 5x + 3 sumando (x + x = 2x, 2x + 2x = 4x, 4x + x = 5x)
+function Aleatorio.siguiente 1
+push static 0
+push static 0
+add
+pop local 0
+push local 0
+push local 0
+add
+push static 0
+add
+push constant 3
+add
+pop static 0
+push static 0
+return

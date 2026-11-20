@@ -1,0 +1,15 @@
+/*********
+* Main.jack - Punto de entrada: crea el juego, lo ejecuta y lo libera.
+* Autor 1: Laura Santamaria Espinosa
+* Autor 2: Pablo Alvarez Restrepo
+*********/
+class Main {
+    // Crea el juego, lo ejecuta y lo libera
+    function void main() {
+        var Juego juego;
+        let juego = Juego.new();
+        do juego.ejecutar();
+        do juego.dispose();
+        return;
+    }
+}

@@ -1,0 +1,135 @@
+/*********
+* Juego.jack - Ciclo del juego: pantalla inicial, partida, pausa y final.
+* Lee el teclado, le pide a Carrera que avance y a Vista que dibuje.
+* Autor 1: Laura Santamaria Espinosa
+* Autor 2: Pablo Alvarez Restrepo
+*********/
+class Juego {
+    field Vista vista;
+    field Carrera carrera;
+    field int distancia, semilla, anterior;
+    field boolean reiniciar, salir;
+
+    // Empieza con la distancia media (300 pasos)
+    constructor Juego new() {
+        let vista = Vista.new();
+        let distancia = 300;
+        let semilla = 1;
+        let anterior = 0;
+        let salir = false;
+        return this;
+    }
+
+    method void dispose() {
+        do vista.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    // Tecla recien presionada, o 0 si es la misma de antes. Asi mantener
+    // una tecla presionada cuenta una sola vez
+    method int leerTecla() {
+        var int k, nueva;
+        let k = Keyboard.keyPressed();
+        let nueva = 0;
+        if (~(k = anterior)) { let nueva = k; }
+        let anterior = k;
+        return nueva;
+    }
+
+    // Repite pantalla inicial y partida hasta que se presione ESC
+    method void ejecutar() {
+        while (~salir) {
+            do menu();
+            if (~salir) { do partida(); }
+        }
+        do vista.adios();
+        return;
+    }
+
+    // Pantalla inicial: 1, 2 o 3 eligen la distancia y ENTER empieza.
+    // La semilla depende de cuanto tarda el jugador en empezar
+    method void menu() {
+        var int k;
+        do vista.inicio();
+        do vista.distancia(distancia);
+        let k = 0;
+        while (~((k = 128) | salir)) {
+            let k = leerTecla();
+            if ((k > 48) & (k < 52)) {
+                let distancia = 150;
+                if (k = 50) { let distancia = 300; }
+                if (k = 51) { let distancia = 600; }
+                do vista.distancia(distancia);
+            }
+            let salir = (k = 140);
+            let semilla = semilla + 1;
+            do Sys.wait(10);
+        }
+        return;
+    }
+
+    // Juega una partida hasta ganar, perder, reiniciar o salir.
+    // El juego se acelera cuando sube el nivel
+    method void partida() {
+        let carrera = Carrera.new(distancia, semilla);
+        let reiniciar = false;
+        do vista.escenario(carrera);
+        while ((carrera.estado() = 0) & ~(reiniciar | salir)) {
+            do vista.borrar(carrera);
+            do carrera.avanzar();
+            do carrera.generar();
+            do vista.dibujar(carrera);
+            do esperar(110 - (carrera.nivel() * 15));
+        }
+        if (~(reiniciar | salir)) { do terminar(); }
+        do carrera.dispose();
+        return;
+    }
+
+    // Espera ms milisegundos revisando el teclado cada 5 ms
+    method void esperar(int ms) {
+        var int t, k;
+        let t = 0;
+        while (t < ms) {
+            let k = leerTecla();
+            if (k = 131) { do carrera.moverCarro(-1); }
+            if (k = 133) { do carrera.moverCarro(1); }
+            if ((k = 80) | (k = 112)) { do pausa(); }
+            do revisarSalida(k);
+            do Sys.wait(5);
+            let t = t + 5;
+        }
+        return;
+    }
+
+    method void revisarSalida(int k) {
+        if ((k = 82) | (k = 114)) { let reiniciar = true; }
+        if (k = 140) { let salir = true; }
+        return;
+    }
+
+    // Detiene el juego hasta presionar P otra vez
+    method void pausa() {
+        var int k;
+        do vista.pausa(true);
+        let k = 0;
+        while (~((k = 80) | (k = 112) | reiniciar | salir)) {
+            do Sys.wait(10);
+            let k = leerTecla();
+            do revisarSalida(k);
+        }
+        do vista.pausa(false);
+        return;
+    }
+
+    // Muestra el resultado y espera R o ESC
+    method void terminar() {
+        do vista.fin(carrera);
+        while (~(reiniciar | salir)) {
+            do Sys.wait(10);
+            do revisarSalida(leerTecla());
+        }
+        return;
+    }
+}
